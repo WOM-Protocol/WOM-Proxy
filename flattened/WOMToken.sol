@@ -11,18 +11,17 @@ pragma solidity 0.5.12;
 contract Ownable {
   address public owner;
   address public pendingOwner;
+  bool public ownerInitialized;
 
   event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
-
-  /**
-   * @dev The Ownable constructor sets the original `owner` of the contract to the sender
-   * account.
-   */
-  constructor () public {
+  function initializeOwner()
+    public
+  {
+    require(!ownerInitialized, 'Ownable: owner has already been initialized');
     owner = msg.sender;
+    ownerInitialized = true;
   }
-
 
   /**
    * @dev Throws if called by any account other than the owner.
@@ -369,6 +368,17 @@ contract WOMToken is StandardToken, Ownable, Initializable {
             return true;
         }
     }
+
+    function batchTransfer(address[] memory _to, uint256[] memory _value) 
+        public
+    {
+        require(_to.length <= 256, 'WOMToken: batch is greater than limit');
+        require(_to.length == _value.length, 'WOMToken: batch length not equal');
+        for (uint256 i = 0; i < _to.length; i++) {
+            transfer(_to[i], _value[i]);
+        }
+    }
+
 
     // the below function allows admin to transfer out any 
     // mistakenly sent ERC20 Tokens to `address(this)` 

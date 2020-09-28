@@ -6,7 +6,7 @@ contract('WOMTokenProxy', ([owner, newOwner, user, user_batch_1, user_batch_2, a
         this.newTokenImplementation = await UpgradeExample.new({ from: owner })
 
         this.data = encodeCall('initialize', [], [])
-        console.log(this.data)
+        // console.log(this.data)
     })
     describe('deploy proxy admin controller', () => {
         beforeEach(async () => {
@@ -44,10 +44,31 @@ contract('WOMTokenProxy', ([owner, newOwner, user, user_batch_1, user_batch_2, a
                             assert.equal(await this.token.decimals(), 18)
                         });
                         it('initial supply', async () => {
-                            console.log(await this.token.initialSupply())
+                            // console.log(await this.token.initialSupply())
                         });
                         it('owner balance', async () => {
-                            console.log(await this.token.balanceOf(owner))
+                            // console.log(await this.token.balanceOf(owner))
+                        });
+                        describe('initialize owner', () => {
+                            beforeEach(async () => {
+                                await this.token.initializeOwner({ from: owner })
+                            });
+                            it('owner set', async () => {
+                                assert.equal(await this.token.owner(), owner)
+                            });
+                            describe('transfer ownership of ownable', () => {
+                                beforeEach(async () => {
+                                    await this.token.transferOwnership(newOwner, { from: owner })
+                                });
+                                describe('claim ownership', () => {
+                                    beforeEach(async () => {
+                                        await this.token.claimOwnership({ from: newOwner })
+                                    });
+                                    it('new owner set', async () => {
+                                        assert.equal(await this.token.owner(), newOwner)
+                                    });
+                                });
+                            });
                         });
                     });
                 });
