@@ -9,17 +9,8 @@ pragma solidity 0.5.12;
 contract Ownable {
   address public owner;
   address public pendingOwner;
-  bool public ownerInitialized;
 
   event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-
-  function initializeOwner()
-    public
-  {
-    require(!ownerInitialized, 'Ownable: owner has already been initialized');
-    owner = msg.sender;
-    ownerInitialized = true;
-  }
 
   /**
    * @dev Throws if called by any account other than the owner.
@@ -37,7 +28,6 @@ contract Ownable {
     require(msg.sender == pendingOwner);
     _;
   }
-
 
   /**
    * @dev Allows the current owner to transfer control of the contract to a newOwner.

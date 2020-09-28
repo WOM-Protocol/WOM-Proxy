@@ -11,17 +11,8 @@ pragma solidity 0.5.12;
 contract Ownable {
   address public owner;
   address public pendingOwner;
-  bool public ownerInitialized;
 
   event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-
-  function initializeOwner()
-    public
-  {
-    require(!ownerInitialized, 'Ownable: owner has already been initialized');
-    owner = msg.sender;
-    ownerInitialized = true;
-  }
 
   /**
    * @dev Throws if called by any account other than the owner.
@@ -39,7 +30,6 @@ contract Ownable {
     require(msg.sender == pendingOwner);
     _;
   }
-
 
   /**
    * @dev Allows the current owner to transfer control of the contract to a newOwner.
@@ -345,6 +335,7 @@ contract WOMToken is StandardToken, Ownable, Initializable {
     uint public decimals = 18;
     // there is no problem in using * here instead of .mul()
     uint256 public initialSupply = 1000000000 * (10 ** uint256(decimals));
+    bool public upgradeV1Owner;
 
     // initialize instead of contructor, to ensure data inside of proxy.
     function initialize() public initializer {
@@ -355,6 +346,14 @@ contract WOMToken is StandardToken, Ownable, Initializable {
         totalSupply = initialSupply;
         balances[msg.sender] = initialSupply; // Send all tokens to owner
         emit Transfer(address(0), msg.sender, initialSupply);
+    }
+
+    function upgradeInitializeOwner(address _owner)
+        public
+    {
+        require(!upgradeV1Owner, 'WOMToken: owner has already been initialized');
+        owner = _owner;
+        upgradeV1Owner = true;
     }
 
     // this function allows one step transfer to contract
