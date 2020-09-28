@@ -1,0 +1,26 @@
+{
+  "name": "wom-proxy-upgrade",
+  "version": "0.0.1",
+  "description": "Upgradable ERC20 token contracts for WOM Protocol.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/On-Chain/WOM-Proxy.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/On-Chain/WOM-Proxy/issues"
+  },
+  "homepage": "https://github.com/On-Chain/WOM-Proxy#readme",
+  "devDependencies": {
+    "@openzeppelin/test-helpers": "^0.5.6",
+    "@openzeppelin/upgrades": "^2.8.0",
+    "ganache-cli": "^6.10.2",
+    "truffle": "^5.1.46",
+    "truffle-flattener": "^1.5.0"
+  }
+}
