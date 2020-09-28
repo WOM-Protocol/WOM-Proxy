@@ -30,9 +30,6 @@ contract('WOMTokenProxy', ([owner, newOwner, user, user_batch_1, user_batch_2, a
                     it('admin set', async () => {
                         assert.equal(await this.proxyAdmin.getProxyAdmin(this.proxy.address), this.proxyAdmin.address)
                     });
-                    it('owner set', async () => {
-                        assert.equal(await this.proxyAdmin.owner(), owner)
-                    });
                     describe('initialize constructor', () => {
                         it('name set', async () => {
                             assert.equal(await this.token.name(), 'WOM Token')
@@ -43,33 +40,27 @@ contract('WOMTokenProxy', ([owner, newOwner, user, user_batch_1, user_batch_2, a
                         it('decimal set', async () => {
                             assert.equal(await this.token.decimals(), 18)
                         });
-                        it('initial supply', async () => {
-                            // console.log(await this.token.initialSupply())
-                        });
                         it('owner balance', async () => {
                             // console.log(await this.token.balanceOf(owner))
                         });
+                        it('owner set', async () => {
+                            assert.equal(await this.token.owner(), owner)
+                        });
                         describe('initialize owner', () => {
-                            beforeEach(async () => {
-                                await this.token.upgradeInitializeOwner(owner,{ from: owner })
-                            });
-                            it('owner set', async () => {
-                                assert.equal(await this.token.owner(), owner)
-                            });
-                            it('initialization set', async () => {
-                                assert.equal(await this.token.upgradeV1Owner(), true)
-                            });
                             describe('transfer ownership of ownable', () => {
                                 beforeEach(async () => {
                                     await this.token.transferOwnership(newOwner, { from: owner })
                                 });
-                                describe('claim ownership', () => {
-                                    beforeEach(async () => {
-                                        await this.token.claimOwnership({ from: newOwner })
-                                    });
-                                    it('new owner set', async () => {
-                                        assert.equal(await this.token.owner(), newOwner)
-                                    });
+                                it('new owner set', async () => {
+                                    assert.equal(await this.token.owner(), newOwner)
+                                });
+                            });
+                            describe('renounce ownership of ownable', () => {
+                                beforeEach(async () => {
+                                    await this.token.renounceOwnership({ from: owner })
+                                });
+                                it('empty owner set', async () => {
+                                    assert.equal(await this.token.owner(), ZERO_ADDRESS)
                                 });
                             });
                         });
@@ -84,7 +75,7 @@ contract('WOMTokenProxy', ([owner, newOwner, user, user_batch_1, user_batch_2, a
                             await assertRevert(this.proxy.changeAdmin(this.newProxyAdmin.address, { from: attacker }))
                         });
                         it('revert when new admin empty address', async () => {
-                            await expectRevert(this.proxyAdmin.changeProxyAdmin(this.proxy.address, ZERO_ADDRESS, { from: owner }), 'Cannot change the admin of a proxy to the zero address.')
+                            await expectRevert(this.proxyAdmin.changeProxyAdmin(this.proxy.address, ZERO_ADDRESS, { from: owner }), 'TransparentUpgradeableProxy: new admin is the zero address')
                         });
                     });
                     describe('functional', () => {
@@ -162,29 +153,16 @@ contract('WOMTokenProxy', ([owner, newOwner, user, user_batch_1, user_batch_2, a
                                         await expectRevert(this.token.init(true), 'UpgradeExample: already initialized')
                                     });
                                     describe('initialize owner', () => {
-                                        beforeEach(async () => {
-                                            await this.token.upgradeInitializeOwner(owner, { from: owner })
-                                        });
-                                        it('owner set', async () => {
-                                            assert.equal(await this.token.owner(), owner)
-                                        });
-                                        it('initialization set', async () => {
-                                            assert.equal(await this.token.upgradeV1Owner(), true)
-                                        });
                                         describe('transfer ownership of ownable', () => {
                                             beforeEach(async () => {
                                                 await this.token.transferOwnership(newOwner, { from: owner })
                                             });
-                                            describe('claim ownership', () => {
-                                                beforeEach(async () => {
-                                                    await this.token.claimOwnership({ from: newOwner })
-                                                });
-                                                it('new owner set', async () => {
-                                                    assert.equal(await this.token.owner(), newOwner)
-                                                });
+                                            it('new owner set', async () => {
+                                                assert.equal(await this.token.owner(), newOwner)
                                             });
                                         });
-                                    });                                });
+                                    });
+                                });
                                 describe('old implementation func available', () => {
                                     beforeEach(async () => {
                                         await this.token.transfer(user, 100, { from: owner })

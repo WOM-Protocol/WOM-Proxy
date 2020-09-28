@@ -1,68 +1,56 @@
-pragma solidity 0.5.12;
+/**
+ * @title WOMToken
+ * @author WOM Protocol <info@womprotocol.io>
+ * @dev Basic ERC20 token compatible with upgradability proxy contracts.
+*/
 
-import "./helpers/Ownable.sol";
-import "./helpers/StandardToken.sol";
-import "@openzeppelin/upgrades/contracts/Initializable.sol";
+pragma solidity >=0.6.0;
 
-interface tokenRecipient { 
-    function receiveApproval(address _from, uint256 _value, bytes calldata _extraData) external;
-}
+import "@openzeppelin/contracts-ethereum-package/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/ERC20.sol";
 
-contract WOMToken is StandardToken, Ownable, Initializable {
 
-    string public name = "WOM Token";
-    string public symbol = "WOM";
-    uint public decimals = 18;
-    // there is no problem in using * here instead of .mul()
-    uint256 public initialSupply = 1000000000 * (10 ** uint256(decimals));
-    bool public upgradeV1Owner;
+contract WOMToken is ERC20UpgradeSafe, OwnableUpgradeSafe {
 
-    // initialize instead of contructor, to ensure data inside of proxy.
-    function initialize() public initializer {
-        name = "WOM Token";
-        symbol = "WOM";
-        decimals = 18;
-        initialSupply = 1000000000 * (10 ** uint256(decimals));
-        totalSupply = initialSupply;
-        balances[msg.sender] = initialSupply; // Send all tokens to owner
-        emit Transfer(address(0), msg.sender, initialSupply);
+    uint256 public constant BATCH_LIMIT = 255;
+
+    /**
+    * @dev Version 1 initialization function required for setting owner.
+    */
+    function initialize()
+        public
+        initializer
+    {
+        __Ownable_init_unchained();
+        __ERC20_init_unchained("WOM Token", "WOM");
+        _mint(msg.sender, 1000000000 * (10 ** uint256(decimals())));
     }
 
-    function upgradeInitializeOwner(address _owner)
+    /**
+    * @dev Batch call transfer funds by calling public transfer function.
+    * @param recipients Receiving address of the funds
+    * @param amounts Amount of funds to transfer.
+    */
+    function batchTransfer(address[] memory recipients, uint256[] memory amounts) 
         public
     {
-        require(!upgradeV1Owner, 'WOMToken: owner has already been initialized');
-        owner = _owner;
-        upgradeV1Owner = true;
-    }
-
-    // this function allows one step transfer to contract
-    function approveAndCall(address _spender, uint256 _value, bytes calldata _extraData)
-        external
-        returns (bool success) 
-    {
-        tokenRecipient spender = tokenRecipient(_spender);
-        if (approve(_spender, _value)) {
-            spender.receiveApproval(msg.sender, _value, _extraData);
-            return true;
+        require(recipients.length <= BATCH_LIMIT, 'WOMToken: batch is greater than limit');
+        require(recipients.length == amounts.length, 'WOMToken: batch length not equal');
+        for (uint256 i = 0; i < recipients.length; i++) {
+            transfer(recipients[i], amounts[i]);
         }
     }
 
-    function batchTransfer(address[] memory _to, uint256[] memory _value) 
-        public
+    /**
+    * @dev Called by owner for transferring any tokens controlled by this contract.
+    * @param token Interface instance of token.
+    * @param recipient Receiving address of the funds.
+    * @param amount Amount of funds to transfer.
+    */
+    function transferFallBackToken(IERC20 token, address recipient, uint256 amount) 
+        public 
+        onlyOwner
     {
-        require(_to.length <= 256, 'WOMToken: batch is greater than limit');
-        require(_to.length == _value.length, 'WOMToken: batch length not equal');
-        for (uint256 i = 0; i < _to.length; i++) {
-            transfer(_to[i], _value[i]);
-        }
-    }
-
-
-    // the below function allows admin to transfer out any 
-    // mistakenly sent ERC20 Tokens to `address(this)` 
-    // (the address of this smart contract)
-    function transferAnyERC20Token(address _tokenAddr, address _toAddr, uint _tokenAmount) public onlyOwner {
-      ERC20(_tokenAddr).transfer(_toAddr, _tokenAmount);
+        token.transfer(recipient, amount);
     }
 }

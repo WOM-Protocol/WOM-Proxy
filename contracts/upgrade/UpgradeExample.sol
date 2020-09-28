@@ -3,7 +3,7 @@
  * @author WOM Protocol <info@womprotocol.io>
  * @dev Example upgrade.
 */
-pragma solidity 0.5.12;
+pragma solidity >=0.6.0;
 
 import "../WOMToken.sol";
 

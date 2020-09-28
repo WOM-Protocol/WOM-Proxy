@@ -3,12 +3,12 @@
  * @author WOM Protocol <info@womprotocol.io>
  * @dev Proxies WOMToken calls and enables WOMToken upgradability.
 */
-pragma solidity 0.5.12;
+pragma solidity >=0.6.0;
 
-import '@openzeppelin/upgrades/contracts/upgradeability/AdminUpgradeabilityProxy.sol';
+import '@openzeppelin/contracts/proxy/TransparentUpgradeableProxy.sol';
 
 
-contract WOMTokenProxy is AdminUpgradeabilityProxy {
-    constructor(address implementation, address proxyOwnerAddr, bytes memory data) public AdminUpgradeabilityProxy(implementation, proxyOwnerAddr, data) {
+contract WOMTokenProxy is TransparentUpgradeableProxy {
+    constructor(address implementation, address proxyOwnerAddr, bytes memory data) public TransparentUpgradeableProxy(implementation, proxyOwnerAddr, data) {
     }
 }
