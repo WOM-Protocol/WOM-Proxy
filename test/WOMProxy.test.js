@@ -1,4 +1,4 @@
-const { WOMToken, WOMTokenProxy, WOMProxyAdmin, UpgradeExample, encodeCall, assertRevert, expectRevert, ZERO_ADDRESS } = require('./common')
+const { WOMToken, ERC20Mock, WOMTokenProxy, WOMProxyAdmin, UpgradeExample, encodeCall, assertRevert, expectRevert, ZERO_ADDRESS, LARGER_BATCH_ADDRESS, LARGER_BATCH_NUMBER } = require('./common')
 
 contract('WOMTokenProxy', ([owner, newOwner, user, user_batch_1, user_batch_2, attacker]) => {
 	beforeEach(async () => {
@@ -6,7 +6,6 @@ contract('WOMTokenProxy', ([owner, newOwner, user, user_batch_1, user_batch_2, a
         this.newTokenImplementation = await UpgradeExample.new({ from: owner })
 
         this.data = encodeCall('initialize', [], [])
-        // console.log(this.data)
     })
     describe('deploy proxy admin controller', () => {
         beforeEach(async () => {
@@ -31,6 +30,11 @@ contract('WOMTokenProxy', ([owner, newOwner, user, user_batch_1, user_batch_2, a
                         assert.equal(await this.proxyAdmin.getProxyAdmin(this.proxy.address), this.proxyAdmin.address)
                     });
                     describe('initialize constructor', () => {
+                        describe('non-functional', () => {
+                            it('revert when already initialized', async () => {
+                                await expectRevert(this.token.initialize({ from: owner }), 'Contract instance has already been initialized')
+                            });
+                        });
                         it('name set', async () => {
                             assert.equal(await this.token.name(), 'WOM Token')
                         });
@@ -171,14 +175,60 @@ contract('WOMTokenProxy', ([owner, newOwner, user, user_batch_1, user_batch_2, a
                                         assert.equal(await this.token.balanceOf(user), 100)
                                     });
                                     describe('batch transfer', () => {
+                                        describe('non-functional', () => {
+                                            it('revert when batch not equal', async () => {
+                                                await expectRevert(this.token.batchTransfer([user_batch_1], [100, 100], { from: owner}), 'WOMToken: batch length not equal')
+                                            });
+                                            it('revert when batch greater than limit', async () => {
+                                                await expectRevert(this.token.batchTransfer(LARGER_BATCH_ADDRESS, LARGER_BATCH_NUMBER, { from: owner}), 'WOMToken: batch is greater than limit')
+                                            });
+                                        });
+                                        describe('functional', () => {
+                                            beforeEach(async () => {
+                                                await this.token.batchTransfer([user_batch_1, user_batch_2], [100, 100], { from: owner })
+                                            });
+                                            it('user 1 balance updated', async () => {
+                                                assert.equal(await this.token.balanceOf(user_batch_1), 100)
+                                            });
+                                            it('user 2 balance updated', async () => {
+                                                assert.equal(await this.token.balanceOf(user_batch_2), 100)
+                                            });
+                                        });
+                                    });
+                                    describe('transferFallBackToken', () => {
                                         beforeEach(async () => {
-                                            await this.token.batchTransfer([user_batch_1, user_batch_2], [100, 100], { from: owner })
+                                            this.mock = await ERC20Mock.new({ from: owner })
                                         });
-                                        it('user 1 balance updated', async () => {
-                                            assert.equal(await this.token.balanceOf(user_batch_1), 100)
-                                        });
-                                        it('user 2 balance updated', async () => {
-                                            assert.equal(await this.token.balanceOf(user_batch_2), 100)
+                                        describe('when mock deployed', () => {
+                                            beforeEach(async () => {
+                                                await this.mock.mint(100, { from: owner })
+                                            });
+                                            describe('transfer into proxy', () => {
+                                                beforeEach(async () => {
+                                                    await this.mock.transfer(this.token.address, 100, { from: owner })
+                                                });
+                                                it('proxy balance updated', async () => {
+                                                    assert.equal(await this.mock.balanceOf(this.token.address), 100)
+                                                });
+                                                describe('transfer out from proxy', async () => {
+                                                    describe('functional', () => {
+                                                        beforeEach(async () => {
+                                                            await this.token.transferFallBackToken(this.mock.address, owner, 100, { from: owner })
+                                                        });
+                                                        it('proxy balance updated', async () => {
+                                                            assert.equal(await this.mock.balanceOf(this.token.address), 0)
+                                                        });
+                                                        it('owner balance updated', async () => {
+                                                            assert.equal(await this.mock.balanceOf(owner), 100)
+                                                        });
+                                                    });
+                                                    describe('non-functional', () => {
+                                                        it('revert when not owner', async () => {
+                                                            await expectRevert(this.token.transferFallBackToken(this.mock.address, owner, 100, { from: attacker }), 'Ownable: caller is not the owner')
+                                                        });
+                                                    });
+                                                });
+                                            });
                                         });
                                     });
                                 })

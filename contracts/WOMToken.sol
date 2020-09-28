@@ -34,8 +34,8 @@ contract WOMToken is ERC20UpgradeSafe, OwnableUpgradeSafe {
     function batchTransfer(address[] memory recipients, uint256[] memory amounts) 
         public
     {
-        require(recipients.length <= BATCH_LIMIT, 'WOMToken: batch is greater than limit');
         require(recipients.length == amounts.length, 'WOMToken: batch length not equal');
+        require(recipients.length <= BATCH_LIMIT, 'WOMToken: batch is greater than limit');
         for (uint256 i = 0; i < recipients.length; i++) {
             transfer(recipients[i], amounts[i]);
         }
